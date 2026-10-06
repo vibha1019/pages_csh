@@ -2,7 +2,7 @@
 toc: false
 layout: post
 title: Classroom Presence System, Live Dashboard
-description: Live attendance for the current class period, from RFID taps (and later the camera) recorded in OCS.
+description: Live attendance for the current class period, from RFID taps checked by the camera, recorded in OCS.
 permalink: /capstone/presence-system/dashboard/
 year: "2026-2027"
 rp_active: dashboard
@@ -27,7 +27,7 @@ rp_active: dashboard
       <div class="rfid-presence-table-wrap">
         <table class="rfid-presence-table">
           <thead>
-            <tr><th>Student</th><th>Status</th><th>Since</th><th>Last signal</th></tr>
+            <tr><th>Student</th><th>Status</th><th>Since</th><th>Camera check</th></tr>
           </thead>
           <tbody id="pd-roster"></tbody>
         </table>
@@ -59,6 +59,23 @@ rp_active: dashboard
     NOT_YET_ARRIVED: "neutral",
   };
   const SUMMARY_STATES = ["PRESENT", "TARDY", "TEMP_OUT", "ABSENT", "LEFT_EARLY", "NOT_YET_ARRIVED"];
+  // Camera verification of each student's most recent tap.
+  const VERIFICATION_LABELS = {
+    VERIFIED: "Verified",
+    MISMATCH: "Mismatch",
+    NO_FACE: "No face",
+    TAP_ONLY: "Tap only",
+    UNVERIFIED: "Unverified",
+    PENDING: "Checking...",
+  };
+  const VERIFICATION_PILL = {
+    VERIFIED: "good",
+    MISMATCH: "bad",
+    NO_FACE: "warn",
+    TAP_ONLY: "neutral",
+    UNVERIFIED: "neutral",
+    PENDING: "neutral",
+  };
 
   const classroomId = Number(new URLSearchParams(location.search).get("classroom")) || 1;
   const el = (id) => document.getElementById(id);
@@ -121,9 +138,16 @@ rp_active: dashboard
       status.appendChild(pill);
       const since = document.createElement("td");
       since.textContent = st.since ? fmtTime(st.since) : "—";
-      const source = document.createElement("td");
-      source.textContent = st.last_source ? st.last_source.toUpperCase() : "—";
-      tr.append(name, status, since, source);
+      const camera = document.createElement("td");
+      if (st.verification) {
+        const check = document.createElement("span");
+        check.className = `rfid-presence-pill rfid-presence-pill-${VERIFICATION_PILL[st.verification] || "neutral"}`;
+        check.textContent = VERIFICATION_LABELS[st.verification] || st.verification;
+        camera.appendChild(check);
+      } else {
+        camera.textContent = "—";
+      }
+      tr.append(name, status, since, camera);
       return tr;
     });
     if (!rows.length) {
